@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rentease-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - rentease-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rentease-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - ./frontend/.env.local
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - rentease-network
+    restart: unless-stopped
+
+  # PostgreSQL Database (Optional - if you want local DB instead of Supabase)
+  postgres:
+    image: postgres:15-alpine
+    container_name: rentease-postgres
+    environment:
+      POSTGRES_DB: rentease
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rentease-network
+    restart: unless-stopped
+
+  # Redis for caching (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: rentease-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - rentease-network
+    restart: unless-stopped
+
+networks:
+  rentease-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
